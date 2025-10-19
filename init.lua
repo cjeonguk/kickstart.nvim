@@ -166,6 +166,11 @@ vim.o.scrolloff = 10
 -- See `:help 'confirm'`
 vim.o.confirm = true
 
+vim.o.tabstop = 4
+vim.o.softtabstop = 4
+vim.o.shiftwidth = 4
+vim.o.expandtab = true
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -671,10 +676,19 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
+        clangd = {},
         -- gopls = {},
-        -- pyright = {},
-        -- rust_analyzer = {},
+        pyright = {},
+        ruff = {},
+        rust_analyzer = {
+          settings = {
+            ['rust-analyzer'] = {
+              check = {
+                command = 'clippy',
+              },
+            },
+          },
+        },
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -717,7 +731,8 @@ require('lazy').setup({
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
         'eslint_d', -- Used to lint fix JS, TS, React (CLI Daemon)
-        'prettier', -- Used to format JS, TS, etc.
+        'prettierd', -- Used to format JS, TS, etc.
+        --'goimports', -- Used to format Go code
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -772,10 +787,12 @@ require('lazy').setup({
         local formatted_by_ft = {
           lua = { 'stylua' },
           -- Conform can also run multiple formatters sequentially
-          -- python = { "isort", "black" },
+          python = { 'ruff' },
           --
           -- You can use 'stop_after_first' to run the first available formatter from the list
           -- javascript = { "prettierd", "prettier", stop_after_first = true },
+          rust = { 'rustfmt' },
+          go = { 'goimports', 'gofmt', stop_after_start = true },
         }
         local prettier_fts = {
           'javascript',
@@ -786,6 +803,7 @@ require('lazy').setup({
           'scss',
           'html',
           'json',
+          'jsonc',
           'yaml',
           'markdown',
         }
@@ -805,9 +823,11 @@ require('lazy').setup({
 
         for _, ft in ipairs(prettier_fts) do
           if formatted_by_ft[ft] then
+            table.insert(formatted_by_ft[ft], 'prettierd')
             table.insert(formatted_by_ft[ft], 'prettier')
+            formatted_by_ft[ft]['stop_after_start'] = true
           else
-            formatted_by_ft[ft] = { 'prettier' }
+            formatted_by_ft[ft] = { 'prettierd', 'prettier', stop_after_start = true }
           end
         end
 
