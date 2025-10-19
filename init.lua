@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -681,8 +681,8 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
-        --
+        ts_ls = {},
+        eslint = {},
 
         lua_ls = {
           -- cmd = { ... },
@@ -716,6 +716,8 @@ require('lazy').setup({
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
+        'eslint_d', -- Used to lint fix JS, TS, React (CLI Daemon)
+        'prettier', -- Used to format JS, TS, etc.
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -766,14 +768,59 @@ require('lazy').setup({
           }
         end
       end,
-      formatters_by_ft = {
-        lua = { 'stylua' },
-        -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
-        --
-        -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
-      },
+      formatters_by_ft = (function()
+        local formatted_by_ft = {
+          lua = { 'stylua' },
+          -- Conform can also run multiple formatters sequentially
+          -- python = { "isort", "black" },
+          --
+          -- You can use 'stop_after_first' to run the first available formatter from the list
+          -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        }
+        local prettier_fts = {
+          'javascript',
+          'typescript',
+          'javascriptreact',
+          'typescriptreact',
+          'css',
+          'scss',
+          'html',
+          'json',
+          'yaml',
+          'markdown',
+        }
+
+        local eslint_fts = {
+          'javascript',
+          'javascriptreact',
+          'javascript.jsx',
+          'typescript',
+          'typescriptreact',
+          'typescript.tsx',
+          'vue',
+          'svelte',
+          'astro',
+          'htmlangular',
+        }
+
+        for _, ft in ipairs(prettier_fts) do
+          if formatted_by_ft[ft] then
+            table.insert(formatted_by_ft[ft], 'prettier')
+          else
+            formatted_by_ft[ft] = { 'prettier' }
+          end
+        end
+
+        for _, ft in ipairs(eslint_fts) do
+          if formatted_by_ft[ft] then
+            table.insert(formatted_by_ft[ft], 'eslint_d')
+          else
+            formatted_by_ft[ft] = { 'eslint_d' }
+          end
+        end
+
+        return formatted_by_ft
+      end)(),
     },
   },
 
@@ -974,7 +1021,7 @@ require('lazy').setup({
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
   -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
+  require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
   -- require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
