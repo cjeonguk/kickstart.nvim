@@ -23,6 +23,7 @@ return {
 
     -- Add your own debuggers here
     'leoluz/nvim-dap-go',
+    'mfussenegger/nvim-dap-python',
   },
   keys = {
     -- Basic debugging keymaps, feel free to change to your liking!
@@ -95,6 +96,8 @@ return {
       ensure_installed = {
         -- Update this to ensure that you have the debuggers for the langs you want
         'delve',
+        'codelldb',
+        'python',
       },
     }
 
@@ -144,5 +147,31 @@ return {
         detached = vim.fn.has 'win32' == 0,
       },
     }
+
+    -- Install python specific config
+    require('dap-python').setup(vim.fn.expand '$HOME/.local/share/nvim/mason/packages/debugpy/venv/bin/python')
+
+    -- Config for CodeLLDB
+    dap.adapters.codelldb = {
+      type = 'executable',
+      command = vim.fn.exepath 'codelldb',
+    }
+
+    dap.configurations.cpp = {
+      {
+        name = 'launch file',
+        type = 'codelldb',
+        request = 'launch',
+        program = function()
+          return vim.fn.input('Path to Executable: ', vim.fn.getcwd() .. '/', 'file')
+        end,
+        cwd = '${workspaceFolder}',
+        stopOnEntry = false,
+      },
+    }
+
+    dap.configurations.c = dap.configurations.cpp
+    dap.configurations.rust = dap.configurations.cpp
+    dap.configurations.zig = dap.configurations.cpp
   end,
 }
